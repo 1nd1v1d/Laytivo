@@ -1,0 +1,9 @@
+.tools/
+**/bin/
+**/obj/
+artifacts/
+TestResults/
+.vs/
+*.user
+*.suo
+.codebase-memory/

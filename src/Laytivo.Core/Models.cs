@@ -24,7 +24,8 @@ public sealed record Workspace(string Id, string Name, DateTimeOffset SavedAtUtc
     IReadOnlyList<MonitorSnapshot> Monitors, IReadOnlyList<WindowSnapshot> Windows);
 
 public sealed record AppSettings(bool StartWithWindows = false, bool RestoreAfterLogin = true,
-    bool LaunchMissingApps = true, int StartupDelaySeconds = 5);
+    bool LaunchMissingApps = true, int StartupDelaySeconds = 5, bool RestoreHotkeyEnabled = true,
+    int RestoreHotkeyModifiers = 3, int RestoreHotkeyKey = 0x52);
 
 public sealed record AppConfiguration(int SchemaVersion, AppSettings Settings, Workspace? Workspace)
 {

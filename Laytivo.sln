@@ -19,6 +19,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Laytivo.Infrastructure.Test
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Laytivo.DesktopSmoke", "tests\Laytivo.DesktopSmoke\Laytivo.DesktopSmoke.csproj", "{CA4039B7-E765-4EDB-85C4-3B79939A3556}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Laytivo.App.Tests", "tests\Laytivo.App.Tests\Laytivo.App.Tests.csproj", "{55A962A5-7515-47B6-898E-ACB566256F59}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -101,6 +103,18 @@ Global
 		{CA4039B7-E765-4EDB-85C4-3B79939A3556}.Release|x64.Build.0 = Release|Any CPU
 		{CA4039B7-E765-4EDB-85C4-3B79939A3556}.Release|x86.ActiveCfg = Release|Any CPU
 		{CA4039B7-E765-4EDB-85C4-3B79939A3556}.Release|x86.Build.0 = Release|Any CPU
+		{55A962A5-7515-47B6-898E-ACB566256F59}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{55A962A5-7515-47B6-898E-ACB566256F59}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{55A962A5-7515-47B6-898E-ACB566256F59}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{55A962A5-7515-47B6-898E-ACB566256F59}.Debug|x64.Build.0 = Debug|Any CPU
+		{55A962A5-7515-47B6-898E-ACB566256F59}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{55A962A5-7515-47B6-898E-ACB566256F59}.Debug|x86.Build.0 = Debug|Any CPU
+		{55A962A5-7515-47B6-898E-ACB566256F59}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{55A962A5-7515-47B6-898E-ACB566256F59}.Release|Any CPU.Build.0 = Release|Any CPU
+		{55A962A5-7515-47B6-898E-ACB566256F59}.Release|x64.ActiveCfg = Release|Any CPU
+		{55A962A5-7515-47B6-898E-ACB566256F59}.Release|x64.Build.0 = Release|Any CPU
+		{55A962A5-7515-47B6-898E-ACB566256F59}.Release|x86.ActiveCfg = Release|Any CPU
+		{55A962A5-7515-47B6-898E-ACB566256F59}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -112,5 +126,6 @@ Global
 		{A9BAE708-9F4F-485D-9C3D-AE006240D9B5} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{85528C72-1967-4752-BE99-1C2A1455ED86} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{CA4039B7-E765-4EDB-85C4-3B79939A3556} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{55A962A5-7515-47B6-898E-ACB566256F59} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 EndGlobal

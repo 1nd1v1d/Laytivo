@@ -24,9 +24,10 @@ public sealed class WindowChoice(LiveWindow window, string monitorName) : INotif
 public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
 {
     private readonly ConfigurationStore _store;
-    private readonly AutostartService _autostart;
+    private readonly IAutostartService _autostart;
     private readonly IWindowSystem _windows;
     private readonly ILocalLog _log;
+    private readonly IGlobalHotkeyService _hotkey;
     private readonly WorkspaceCaptureService _capture;
     private readonly WorkspaceRestoreService _restore;
     private readonly CancellationTokenSource _lifetime = new();
@@ -34,9 +35,10 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     private bool _busy, _configurationBlocked;
     private string _status = "Programme öffnen → Fenster manuell positionieren → Fensterliste aktualisieren und speichern.";
 
-    public MainViewModel(ConfigurationStore store, AutostartService autostart, IWindowSystem windows, ILocalLog log)
+    public MainViewModel(ConfigurationStore store, IAutostartService autostart, IWindowSystem windows, ILocalLog log, IGlobalHotkeyService hotkey)
     {
         _store = store; _autostart = autostart; _windows = windows; _log = log;
+        _hotkey = hotkey;
         _capture = new(windows);
         _restore = new(windows, new ApplicationLauncher(), log);
         RefreshCommand = new(() => RunAsync(RefreshAsync), () => !Busy);
@@ -59,6 +61,11 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         }
         LoadSettings();
         UpdateProfile();
+        if (!_configurationBlocked)
+        {
+            try { _hotkey.Configure(_configuration.Settings); HotkeyStatus = HotkeyDescription(_configuration.Settings); }
+            catch (Exception ex) { HotkeyStatus = ex.Message; _log.Write("hotkey-registration-failed", new { error = ex.Message }); }
+        }
     }
 
     public ObservableCollection<WindowChoice> Windows { get; } = [];
@@ -69,6 +76,12 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     public bool RestoreAfterLogin { get; set; }
     public bool LaunchMissingApps { get; set; }
     public int StartupDelaySeconds { get; set; }
+    public bool RestoreHotkeyEnabled { get; set; }
+    public int RestoreHotkeyModifiers { get; set; }
+    public int RestoreHotkeyKey { get; set; }
+    public IReadOnlyList<HotkeyChoice> HotkeyModifiers => RestoreHotkey.Modifiers;
+    public IReadOnlyList<HotkeyChoice> HotkeyKeys => RestoreHotkey.Keys;
+    public string HotkeyStatus { get; private set; } = "Tastatur-Shortcut ist nicht aktiv.";
     public bool ConfigurationBlocked => _configurationBlocked;
     public bool Busy { get => _busy; private set { _busy = value; Changed(); Changed(nameof(IsIdle)); UpdateCommands(); } }
     public bool IsIdle => !Busy;
@@ -116,6 +129,7 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     {
         if (Busy) { Status = "Ein Vorgang läuft bereits."; return; }
         if (_configurationBlocked) return;
+        if (_configuration.Workspace is null) { Status = "Bitte zuerst eine Fensteranordnung speichern."; return; }
         await RunAsync(async () =>
         {
             Status = "Anordnung wird wiederhergestellt … fehlende Fenster werden bis zu 20 Sekunden erwartet.";
@@ -140,21 +154,45 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         catch (OperationCanceledException) { }
     }
 
-    private void ApplySettings()
+    private void ApplySettings(bool configureHotkey = true)
     {
-        var settings = new AppSettings(StartWithWindows, RestoreAfterLogin, LaunchMissingApps, StartupDelaySeconds);
+        var settings = new AppSettings(StartWithWindows, RestoreAfterLogin, LaunchMissingApps, StartupDelaySeconds,
+            RestoreHotkeyEnabled, RestoreHotkeyModifiers, RestoreHotkeyKey);
         var previous = _configuration.Settings;
         var next = _configuration with { Settings = settings };
         ConfigurationValidator.Validate(next);
-        _autostart.SetEnabled(settings.StartWithWindows);
-        try { _store.Save(next); }
-        catch
+        var previousHotkey = previous with { RestoreHotkeyEnabled = _hotkey.IsRegistered };
+        if (configureHotkey) _hotkey.Configure(settings);
+        var autostartChanged = false;
+        try { _autostart.SetEnabled(settings.StartWithWindows); autostartChanged = true; _store.Save(next); }
+        catch (Exception error)
         {
-            _autostart.SetEnabled(previous.StartWithWindows);
+            var rollbackErrors = new List<string>();
+            if (configureHotkey)
+            {
+                try { _hotkey.Configure(previousHotkey); }
+                catch (Exception ex) { rollbackErrors.Add(ex.Message); }
+            }
+            if (autostartChanged)
+            {
+                try { _autostart.SetEnabled(previous.StartWithWindows); }
+                catch (Exception ex) { rollbackErrors.Add(ex.Message); }
+            }
+            if (rollbackErrors.Count > 0)
+            {
+                HotkeyStatus = "Einstellungen konnten nicht vollständig zurückgesetzt werden. Bitte erneut übernehmen.";
+                Changed(nameof(HotkeyStatus));
+                throw new InvalidOperationException($"{error.Message} Rücksetzen fehlgeschlagen: {string.Join("; ", rollbackErrors)}", error);
+            }
             throw;
         }
         _configuration = next;
-        Status = "Einstellungen gespeichert; Windows-Autostart wurde im Benutzerkonto aktualisiert.";
+        if (configureHotkey)
+        {
+            HotkeyStatus = HotkeyDescription(settings);
+            Changed(nameof(HotkeyStatus));
+        }
+        Status = "Einstellungen gespeichert.";
         StateChanged?.Invoke(this, EventArgs.Empty);
     }
 
@@ -170,7 +208,10 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         RestoreAfterLogin = changed.RestoreAfterLogin;
         LaunchMissingApps = changed.LaunchMissingApps;
         StartupDelaySeconds = changed.StartupDelaySeconds;
-        try { ApplySettings(); }
+        RestoreHotkeyEnabled = changed.RestoreHotkeyEnabled;
+        RestoreHotkeyModifiers = changed.RestoreHotkeyModifiers;
+        RestoreHotkeyKey = changed.RestoreHotkeyKey;
+        try { ApplySettings(configureHotkey: false); }
         catch (Exception ex) { Status = ex.Message; _log.Write("settings-failed", new { error = ex.Message }); }
         LoadSettings();
     }
@@ -180,6 +221,9 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         var archived = _store.ArchiveInvalidConfiguration();
         _configuration = AppConfiguration.Empty with { Settings = new(StartWithWindows: _autostart.IsEnabled()) };
         _store.Save(_configuration);
+        try { _hotkey.Configure(_configuration.Settings); HotkeyStatus = HotkeyDescription(_configuration.Settings); }
+        catch (Exception ex) { HotkeyStatus = ex.Message; _log.Write("hotkey-registration-failed", new { error = ex.Message }); }
+        Changed(nameof(HotkeyStatus));
         _configurationBlocked = false;
         Changed(nameof(ConfigurationBlocked));
         LoadSettings();
@@ -203,7 +247,9 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         var settings = _configuration.Settings;
         StartWithWindows = settings.StartWithWindows; RestoreAfterLogin = settings.RestoreAfterLogin;
         LaunchMissingApps = settings.LaunchMissingApps; StartupDelaySeconds = settings.StartupDelaySeconds;
+        RestoreHotkeyEnabled = settings.RestoreHotkeyEnabled; RestoreHotkeyModifiers = settings.RestoreHotkeyModifiers; RestoreHotkeyKey = settings.RestoreHotkeyKey;
         Changed(nameof(StartWithWindows)); Changed(nameof(RestoreAfterLogin)); Changed(nameof(LaunchMissingApps)); Changed(nameof(StartupDelaySeconds));
+        Changed(nameof(RestoreHotkeyEnabled)); Changed(nameof(RestoreHotkeyModifiers)); Changed(nameof(RestoreHotkeyKey));
         StateChanged?.Invoke(this, EventArgs.Empty);
     }
 
@@ -231,5 +277,7 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         ApplySettingsCommand.RaiseCanExecuteChanged(); ResetCommand.RaiseCanExecuteChanged();
     }
     private void Changed([CallerMemberName] string? name = null) => PropertyChanged?.Invoke(this, new(name));
+    private static string HotkeyDescription(AppSettings settings) => settings.RestoreHotkeyEnabled
+        ? $"Aktiv: {RestoreHotkey.Describe(settings)} – funktioniert auch bei ausgeblendetem Fenster." : "Tastatur-Shortcut ist deaktiviert.";
     public void Dispose() { _lifetime.Cancel(); _lifetime.Dispose(); }
 }

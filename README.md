@@ -4,7 +4,7 @@ Laytivo speichert eine manuell eingerichtete Windows-Fensteranordnung und stellt
 
 ## Direkt starten / installieren
 
-Den Installer gibt es unter [GitHub Releases](https://github.com/1nd1v1d/Laytivo/releases). Repository und Downloads sind öffentlich und ohne GitHub-Anmeldung erreichbar. `Laytivo-Setup-0.1.0-x64.exe` installiert pro Benutzer ohne Administratorrechte, inklusive .NET-Laufzeit, Startmenü-Verknüpfungen und optionalem Desktop-Symbol. **Vor Installation, Update oder Deinstallation Laytivo über das Tray-Menü beenden.**
+Den Installer gibt es unter [GitHub Releases](https://github.com/1nd1v1d/Laytivo/releases). Repository und Downloads sind öffentlich und ohne GitHub-Anmeldung erreichbar. `Laytivo-Setup-0.2.0-x64.exe` installiert pro Benutzer ohne Administratorrechte, inklusive .NET-Laufzeit, Startmenü-Verknüpfungen und optionalem Desktop-Symbol. **Vor Installation, Update oder Deinstallation Laytivo über das Tray-Menü beenden.**
 
 Die ausführliche [Installations- und Bedienungsanleitung](ANLEITUNG.html) wird mitinstalliert und ist auch als eigene Release-Datei verfügbar. Der Installer löscht bei der Deinstallation keine Profile oder Einstellungen. Die Vorschauversion ist nicht codesigniert; zu den Release-Dateien gehören SHA-256-Prüfsummen.
 
@@ -22,6 +22,10 @@ Alternativ den **gesamten Ordner** aus der portablen ZIP-Datei an einen dauerhaf
 **Schließen des Fensters verbirgt nur die Oberfläche.** Im Windows-Tray bleibt Laytivo erreichbar; gegebenenfalls unter dem Pfeil für ausgeblendete Symbole. Rechtsklick bietet Wiederherstellen, Speichern (öffnet die Fensterauswahl), Einstellungen, zwei direkt wirksame Optionen und „Laytivo beenden“. Doppelklick öffnet die Einstellungen. Ein zweiter Laytivo-Prozess beendet sich ohne einen weiteren Restore.
 
 ## Einstellungen und Windows-Anmeldung
+
+**Globaler Tastatur-Shortcut: Strg + Alt + R.** Solange Laytivo im Tray läuft, stellt er die gespeicherte Anordnung wieder her – auch bei ausgeblendetem Einstellungsfenster oder wenn eine andere App aktiv ist. In den Einstellungen lässt er sich deaktivieren und ändern (Strg/Alt/Umschalt mit A–Z oder F1–F11). Änderungen mit „Einstellungen übernehmen“ aktivieren. Belegte Kombinationen werden verständlich gemeldet; eine fehlgeschlagene Änderung entfernt den bisherigen Shortcut nicht. Ohne gespeichertes Profil wird zum Speichern aufgefordert. Windows-Autostart, manueller Tray-Restore und Hotkey verwenden denselben gegen parallele Ausführung geschützten Restore-Ablauf.
+
+Die Implementierung nutzt `RegisterHotKey` mit `MOD_NOREPEAT` und ein unsichtbares Nachrichtenfenster. Es gibt keinen Tastatur-Hook und kein Polling; gehaltene Tasten erzeugen keine fortlaufenden Wiederherstellungsaufrufe. Registrierungen werden bei Änderung, Deaktivierung und Beenden freigegeben. Ältere Konfigurationen erhalten rückwärtskompatibel den aktivierten Standardshortcut.
 
 | Einstellung | Standard | Wirkung |
 |---|---|---|
@@ -75,6 +79,7 @@ dotnet test tests/Laytivo.Tests -c Release
 - `tests/Laytivo.Tests`: Kernlogik und Ablauf mit kontrollierten Abhängigkeiten.
 - `tests/Laytivo.Infrastructure.Tests`: Persistenz, Validierung, Archivierung, Log-Aufbewahrung und Startvalidierung.
 - `tests/Laytivo.DesktopSmoke`: ausführbare Integration mit ausschließlich eigenen Testfenstern.
+- `tests/Laytivo.App.Tests`: native Hotkey-Registrierung und Nachrichtenverarbeitung, Konflikt-/Freigabetests sowie UI-Einstellungsfehlerfälle mit isolierter Persistenz.
 
 ## Wiederherstellungsverhalten
 
@@ -105,10 +110,10 @@ Für isolierte Entwicklungs-/UI-Prüfungen: `Laytivo.exe --data-directory "C:\Pf
 
 ## Grenzen und Teststand
 
-**Geprüft am 04.11.2026:** 56 automatisierte Tests, Release-Build ohne Warnungen, realer Desktop-Smoke mit 16 Prüfungen auf vier Monitoren bei 125 % Skalierung, einschließlich links/oberhalb liegender Displays. Die WPF-Oberfläche wurde geöffnet und visuell geprüft; Schließen blendete sie aus und ließ den Prozess laufen. Die portable Version wurde ohne `DOTNET_ROOT` gestartet: `--startup` blieb ohne sichtbares Hauptfenster, eine zweite Instanz beendete sich erfolgreich und ließ die erste weiterlaufen. Der neue native Snap-Erhaltungstest konnte mangels aktuell angedockten Fensters noch nicht ausgeführt werden. Der genaue Abnahmestand und die noch manuellen Prüfungen stehen in [TESTING.md](TESTING.md).
+**Geprüft am 04.11.2026:** 69 automatisierte Tests, Release-Build ohne Warnungen, realer Desktop-Smoke mit 16 Prüfungen auf vier Monitoren bei 125 % Skalierung, einschließlich links/oberhalb liegender Displays. Die WPF-Oberfläche wurde geöffnet und visuell geprüft; Schließen blendete sie aus und ließ den Prozess laufen. Die portable Version wurde ohne `DOTNET_ROOT` gestartet: `--startup` blieb ohne sichtbares Hauptfenster, eine zweite Instanz beendete sich erfolgreich und ließ die erste weiterlaufen. Der neue native Snap-Erhaltungstest konnte mangels aktuell angedockten Fensters noch nicht ausgeführt werden. Der genaue Abnahmestand und die noch manuellen Prüfungen stehen in [TESTING.md](TESTING.md).
 
 Ein echter Windows-Neustart/Login, Abziehen eines physischen Monitors, gemischte reale DPI-Skalierungen und alle Sonderanwendungen wurden nicht abschließend getestet. Diese Unterschiede sind durch deterministische Kernlogiktests teilweise abgedeckt, ersetzen aber keine Hardware-/Anmeldetests.
 
 Store-/UWP-Apps und bekannte Hilfsprozesse sind als nicht automatisch startbar markiert; ihre vorhandenen Fenster können häufig positioniert werden. Erhöhte oder von der App selbst kontrollierte Fenster können Zugriffe verweigern. Identische Fenster mit identischen Titeln/Klassen können nicht eindeutig unterschieden werden. Browser-/IDE-Sitzungen, geschlossene Dokumente und appinterne Zustände werden nur soweit möglich über explizite Argumente rekonstruiert. Es gibt keinen allgemeinen Adapter für die Wiederherstellung solcher Inhalte. Monitor-IDs können sich durch Hardware-/Treiberänderungen ändern; Fallbacks halten die Fenster sichtbar. Keine garantierte Unterstützung für andere virtuelle Windows-Desktops.
 
-Mehrere Profile, Hotkeys, Rastereditor und permanente Live-Regeln sind nicht Bestandteil dieses MVP. Die Anwendung und ZIP sind lokal gebaut und nicht codesigniert. Vor öffentlicher Veröffentlichung sind die in den Anforderungen erwähnten Namens-/Markenfragen separat zu klären.
+Mehrere Profile, Rastereditor und permanente Live-Regeln sind nicht Bestandteil dieses MVP. Die Anwendung und ZIP sind lokal gebaut und nicht codesigniert. Vor öffentlicher Veröffentlichung sind die in den Anforderungen erwähnten Namens-/Markenfragen separat zu klären.

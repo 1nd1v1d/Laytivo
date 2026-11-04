@@ -1,5 +1,18 @@
 namespace Laytivo.Core;
 
+public interface IGlobalHotkeyService
+{
+    event EventHandler? Pressed;
+    bool IsRegistered { get; }
+    void Configure(AppSettings settings);
+}
+
+public interface IAutostartService
+{
+    bool IsEnabled();
+    void SetEnabled(bool enabled);
+}
+
 public interface IWindowSystem
 {
     IReadOnlyList<MonitorSnapshot> GetMonitors();

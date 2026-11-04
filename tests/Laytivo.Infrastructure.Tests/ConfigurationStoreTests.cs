@@ -9,6 +9,21 @@ public sealed class ConfigurationStoreTests : IDisposable
     private ConfigurationStore Store => new(_directory);
 
     [Fact]
+    public void ShortcutSurvivesRestartAndLegacyConfigurationGetsDefault()
+    {
+        var settings = new AppSettings(RestoreHotkeyEnabled: false, RestoreHotkeyModifiers: 6, RestoreHotkeyKey: 0x78);
+        Store.Save(new(1, settings, null));
+        Assert.Equal(settings, Store.Load().Settings);
+        var json = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(Store.FilePath))!;
+        var saved = json["settings"]!.AsObject();
+        saved.Remove("restoreHotkeyEnabled"); saved.Remove("restoreHotkeyModifiers"); saved.Remove("restoreHotkeyKey");
+        File.WriteAllText(Store.FilePath, json.ToJsonString());
+        var legacy = Store.Load().Settings;
+        Assert.True(legacy.RestoreHotkeyEnabled);
+        Assert.Equal("Strg + Alt + R", RestoreHotkey.Describe(legacy));
+    }
+
+    [Fact]
     public void SnapStateAndVisibleFrameSurviveRoundTripAndOlderProfilesStillLoad()
     {
         var config = Configuration();

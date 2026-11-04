@@ -1,8 +1,9 @@
+using Laytivo.Core;
 using Microsoft.Win32;
 
 namespace Laytivo.Infrastructure;
 
-public sealed class AutostartService
+public sealed class AutostartService : IAutostartService
 {
     private const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
     public bool IsEnabled()

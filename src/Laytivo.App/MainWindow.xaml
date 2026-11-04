@@ -70,6 +70,13 @@
               <CheckBox Content="Laytivo mit Windows starten" IsChecked="{Binding StartWithWindows}" AutomationProperties.AutomationId="StartWithWindows" />
               <CheckBox Content="Gespeicherte Anordnung nach Anmeldung wiederherstellen" IsChecked="{Binding RestoreAfterLogin}" />
               <CheckBox Content="Fehlende Programme automatisch starten" IsChecked="{Binding LaunchMissingApps}" AutomationProperties.AutomationId="LaunchMissingApps" />
+              <CheckBox Content="Tastatur-Shortcut zum Wiederherstellen aktivieren" IsChecked="{Binding RestoreHotkeyEnabled}" AutomationProperties.AutomationId="RestoreHotkeyEnabled" />
+              <StackPanel Orientation="Horizontal" Margin="0,6,0,8" IsEnabled="{Binding RestoreHotkeyEnabled}">
+                <ComboBox ItemsSource="{Binding HotkeyModifiers}" SelectedValue="{Binding RestoreHotkeyModifiers}" SelectedValuePath="Value" DisplayMemberPath="Label" MinWidth="180" Padding="6" />
+                <TextBlock Text=" + " VerticalAlignment="Center" Margin="6,0" />
+                <ComboBox ItemsSource="{Binding HotkeyKeys}" SelectedValue="{Binding RestoreHotkeyKey}" SelectedValuePath="Value" DisplayMemberPath="Label" Width="80" Padding="6" />
+              </StackPanel>
+              <TextBlock Text="{Binding HotkeyStatus}" TextWrapping="Wrap" FontSize="12" Foreground="#54697D" Margin="0,0,0,8" />
               <StackPanel Orientation="Horizontal" Margin="0,8,0,12">
                 <TextBlock Text="Startverzögerung nach Anmeldung (Sekunden)" VerticalAlignment="Center" Margin="0,0,12,0" />
                 <ComboBox ItemsSource="{Binding DelayOptions}" SelectedItem="{Binding StartupDelaySeconds}" Width="70" Padding="6" />

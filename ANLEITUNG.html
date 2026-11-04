@@ -20,16 +20,16 @@
 <body><main>
   <h1>Laytivo</h1>
   <p class="lead">Deine Fensteranordnung speichern und wieder an ihren Platz bringen.</p>
-  <p>Diese Anleitung gilt für die Windows-11-x64-Vorschauversion 0.1.0. Die Anwendung läuft lokal und offline. Sie benötigt keine Administratorrechte und sammelt keine Fensterinhalte oder Screenshots.</p>
+  <p>Diese Anleitung gilt für die Windows-11-x64-Vorschauversion 0.2.0. Die Anwendung läuft lokal und offline. Sie benötigt keine Administratorrechte und sammelt keine Fensterinhalte oder Screenshots.</p>
 
   <h2>1. Herunterladen und installieren</h2>
   <ol>
-    <li>Öffne die <a href="https://github.com/1nd1v1d/Laytivo/releases">Laytivo-Releases auf GitHub</a> und lade <strong>Laytivo-Setup-0.1.0-x64.exe</strong> herunter. Bei einem privaten Repository musst du mit einem berechtigten GitHub-Konto angemeldet sein.</li>
+    <li>Öffne die <a href="https://github.com/1nd1v1d/Laytivo/releases">Laytivo-Releases auf GitHub</a> und lade <strong>Laytivo-Setup-0.2.0-x64.exe</strong> herunter. Der Download ist öffentlich und benötigt keine GitHub-Anmeldung.</li>
     <li>Falls Laytivo bereits läuft: Rechtsklick auf das Tray-Symbol neben der Uhr → <strong>Laytivo beenden</strong>. Das bloße Schließen des Einstellungsfensters reicht nicht.</li>
     <li>Starte die Installerdatei. Sie installiert standardmäßig nach <code>%LocalAppData%\Programs\Laytivo</code> und erstellt einen Startmenüeintrag. Eine Desktop-Verknüpfung ist optional.</li>
     <li>Zum Abschluss kannst du <strong>Laytivo jetzt starten</strong> auswählen. Die .NET-Laufzeit ist enthalten; du musst sie nicht separat installieren.</li>
   </ol>
-  <p class="note">Die Vorschauversion ist nicht codesigniert. Prüfe vor dem Ausführen, dass die Datei aus deinem Laytivo-Release stammt. Mit PowerShell <code>Get-FileHash .\Laytivo-Setup-0.1.0-x64.exe -Algorithm SHA256</code> kannst du die Prüfsumme mit <code>SHA256SUMS.txt</code> aus demselben Release vergleichen.</p>
+  <p class="note">Die Vorschauversion ist nicht codesigniert. Prüfe vor dem Ausführen, dass die Datei aus deinem Laytivo-Release stammt. Mit PowerShell <code>Get-FileHash .\Laytivo-Setup-0.2.0-x64.exe -Algorithm SHA256</code> kannst du die Prüfsumme mit <code>SHA256SUMS.txt</code> aus demselben Release vergleichen.</p>
 
   <h2>2. Deine erste Anordnung speichern</h2>
   <ol>
@@ -44,7 +44,11 @@
   <p>Im Einstellungsfenster oder im Tray-Menü wählst du <strong>Gespeicherte Anordnung wiederherstellen</strong>. Passende offene Fenster werden wiederverwendet. Fehlende unterstützte Programme werden gestartet, wenn die entsprechende Option aktiviert ist. Laytivo wartet bis zu 20 Sekunden auf fehlende Fenster. Im Status siehst du erfolgreiche, teilweise erfolgreiche, übersprungene und fehlgeschlagene Einträge.</p>
   <p><strong>Fenster schließen = im Tray weiterlaufen.</strong> Zum vollständigen Beenden verwende <strong>Laytivo beenden</strong> im Tray-Menü. Windows kann das Symbol unter dem Pfeil für ausgeblendete Symbole anzeigen.</p>
 
-  <h2>4. Mit Windows starten</h2>
+  <h2>4. Tastatur-Shortcut</h2>
+  <p><strong>Strg + Alt + R</strong> stellt die gespeicherte Anordnung direkt wieder her, auch wenn ein anderes Programm aktiv oder das Einstellungsfenster geschlossen ist. Laytivo muss dazu im Tray laufen. Ein noch laufender Vorgang wird nicht parallel erneut gestartet.</p>
+  <p>In den Einstellungen kannst du den Shortcut deaktivieren oder eine andere Kombination aus Strg/Alt/Umschalt und A–Z bzw. F1–F11 wählen. Klicke anschließend auf <strong>Einstellungen übernehmen</strong>. Ist die Kombination bereits belegt, zeigt Laytivo den Konflikt an; ein bisher funktionierender Shortcut bleibt bei einer fehlgeschlagenen Änderung erhalten. Ohne gespeichertes Profil wirst du zuerst zum Speichern aufgefordert.</p>
+
+  <h2>5. Mit Windows starten</h2>
   <ul>
     <li><strong>Laytivo mit Windows starten:</strong> startet Laytivo nach deiner Anmeldung unsichtbar im Tray.</li>
     <li><strong>Gespeicherte Anordnung nach Anmeldung wiederherstellen:</strong> aktiviert unabhängig davon den automatischen Restore.</li>
@@ -53,20 +57,20 @@
   </ul>
   <p>Klicke anschließend auf <strong>Einstellungen übernehmen</strong>. Die Autostart-Option wird tatsächlich im Benutzerkonto eingerichtet. Manuelles Wiederherstellen funktioniert auch bei deaktiviertem Autostart.</p>
 
-  <h2>5. Windows-Andockung und bekannte Grenzen</h2>
+  <h2>6. Windows-Andockung und bekannte Grenzen</h2>
   <p>Die aktuelle Anordnung von Windows-Snap-Fenstern wird gespeichert. Noch vorhandene native Andockungen sollen beim Restore erhalten bleiben. <strong>Bereits gelöste Andockungen und geschlossene Windows-Snap-Gruppen werden nicht neu erzeugt.</strong> In diesem Fall werden Position und Größe hergestellt und ein Teilerfolg gemeldet. Bei Bedarf dockst du die Fenster erneut manuell mit Windows an.</p>
   <p>Nach dem Update von einer früheren Entwicklungsversion bitte einmal neu speichern, damit Andockzustand und sichtbare Rahmenabmessungen im Profil enthalten sind. Die neue native Andockerhaltung ist noch nicht abschließend live abgenommen.</p>
   <p>Das Starten einer EXE stellt keine Garantie für dieselben Browser-Tabs, Dokumente oder IDE-Projekte dar. Store-/UWP-Apps und bekannte Hilfsprozesse sind nicht allgemein automatisch startbar. Erhöhte oder besonders verwaltete Fenster können eine Positionierung verweigern. Fehlende Monitore werden durch einen sichtbaren Fallback ersetzt, ohne das gespeicherte Originalprofil zu verändern.</p>
 
-  <h2>6. Updates und Wechsel von der portablen Version</h2>
+  <h2>7. Updates und Wechsel von der portablen Version</h2>
   <p>Beende Laytivo über das Tray und führe den neuen Installer aus. Nutze denselben Installationsordner. Einstellungen und Profil bleiben unter <code>%LocalAppData%\Laytivo</code> erhalten.</p>
   <p>Wenn du bisher die portable Version verwendet hast, beende sie vor der Installation und starte danach die installierte Version über das Startmenü. Übernimm die Autostart-Einstellung erneut, damit der Eintrag auf den neuen Programmpfad zeigt. Dein vorhandenes Profil wird aus demselben Datenordner geladen.</p>
 
-  <h2>7. Deinstallieren und Daten sichern</h2>
+  <h2>8. Deinstallieren und Daten sichern</h2>
   <p>Beende Laytivo über das Tray. Öffne Windows <strong>Einstellungen → Apps → Installierte Apps → Laytivo → Deinstallieren</strong>. Die Deinstallation entfernt die installierten Dateien, Verknüpfungen und einen zu dieser Installation gehörenden Autostart-Eintrag. Profil, Einstellungen und lokale Protokolle bleiben erhalten.</p>
   <p>Deine Daten findest du in <code>%LocalAppData%\Laytivo</code>. <code>configuration.json</code> enthält das Profil, <code>configuration.json.bak</code> den vorherigen gespeicherten Stand und <code>logs</code> begrenzte Diagnoseprotokolle. Für eine Sicherung kopierst du den Datenordner bei beendetem Laytivo. Diese Dateien können Dokumenttitel und Programmpfade enthalten.</p>
 
-  <h2>8. Wenn etwas nicht funktioniert</h2>
+  <h2>9. Wenn etwas nicht funktioniert</h2>
   <ul>
     <li><strong>Installer meldet laufende App:</strong> alle Laytivo-Instanzen über ihr Tray-Menü beenden und erneut versuchen.</li>
     <li><strong>Programm startet nicht automatisch:</strong> prüfen, ob seine EXE noch existiert und es als startbar gekennzeichnet ist; optionale Argumente und Arbeitsverzeichnis prüfen.</li>
@@ -74,6 +78,6 @@
     <li><strong>Autostart bleibt aus:</strong> Einstellung übernehmen und zusätzlich die Windows-Autostart-Einstellungen prüfen.</li>
     <li><strong>Konfiguration nicht lesbar:</strong> Originaldatei sichern; der ausdrückliche Befehl zum Archivieren ermöglicht einen Neuanfang.</li>
   </ul>
-  <footer>Laytivo 0.1.0 · Stand 04.11.2026 · Vollständige manuelle Login-/Hardware-Abnahme noch offen. Quellcode und Teststand: GitHub-Repository Laytivo.</footer>
+  <footer>Laytivo 0.2.0 · Stand 04.11.2026 · Vollständige manuelle Login-/Hardware-Abnahme noch offen. Quellcode und Teststand: GitHub-Repository Laytivo.</footer>
 </main></body>
 </html>

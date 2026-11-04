@@ -1,5 +1,6 @@
 using System.Security.Principal;
 using System.Windows;
+using Laytivo.Core;
 using Laytivo.Infrastructure;
 
 namespace Laytivo.App;
@@ -11,6 +12,7 @@ public partial class App : Application
     private bool _ownsMutex;
     private MainViewModel? _viewModel;
     private TrayService? _tray;
+    private GlobalHotkeyService? _hotkey;
     private LocalLog? _log;
 
     protected override void OnStartup(StartupEventArgs e)
@@ -31,7 +33,13 @@ public partial class App : Application
         };
         try
         {
-            _viewModel = new(new ConfigurationStore(directory), new AutostartService(), new WindowsWindowSystem(), _log);
+            _hotkey = new GlobalHotkeyService();
+            _viewModel = new(new ConfigurationStore(directory), new AutostartService(), new WindowsWindowSystem(), _log, _hotkey);
+            _hotkey.Pressed += async (_, _) =>
+            {
+                _log.Write("hotkey-restore-requested", new { shortcut = RestoreHotkey.Describe(_viewModel.EffectiveSettings) });
+                await _viewModel.RestoreAsync();
+            };
             var window = new MainWindow(_viewModel);
             MainWindow = window;
             void ShowSettings() { window.Show(); if (window.WindowState == WindowState.Minimized) window.WindowState = WindowState.Normal; window.Activate(); }
@@ -49,6 +57,7 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
+        _hotkey?.Dispose();
         _viewModel?.Dispose();
         _tray?.Dispose();
         _log?.Write("stopped", new { e.ApplicationExitCode });

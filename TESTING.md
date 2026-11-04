@@ -2,9 +2,25 @@
 
 Stand: 04.11.2026. Automatisierte Tests prüfen Verhalten mit deterministischen Fakes und echten Dateien. Desktop-Smoke prüft echte Win32-Fenster, jedoch ausschließlich die eigenen Testprozesse. Ein Windows-Login wurde nicht simuliert und nicht ausgelöst.
 
-## Installer 0.1.0
+## Globaler Shortcut 0.2.0
 
-Der Inno-Setup-7-Installer wurde unter Windows in einem eigenen Zielordner tatsächlich installiert, gestartet, aktualisiert und wieder deinstalliert. `scripts/Test-Installer.ps1` hat alle **23 Prüfungen** bestanden:
+69 automatisierte Tests bestanden: 48 Kernlogiktests, 14 Infrastrukturtests und 7 App-Tests. Die neuen Tests prüfen unter anderem:
+
+- Standard Strg + Alt + R, gültige Auswahl sowie Ausschluss reservierter Windows-/F12-Kombinationen.
+- Persistenz und Standardwerte bei älteren Konfigurationen ohne Hotkey-Felder.
+- Tatsächliche `RegisterHotKey`-Registrierung unter Windows, Konflikterkennung, Erhaltung des vorherigen Shortcuts bei Fehler und Freigabe bei Änderung/Beenden.
+- Zustellung nativer `WM_HOTKEY`-Nachrichten an das unsichtbare Nachrichtenfenster und Ignorieren falscher/deaktivierter Kombinationen.
+- Rücksetzen nach echtem Speicherfehler, ohne einen beim Start bereits belegten Shortcut fälschlich als aktiv zu behandeln.
+- Erhalt eines benutzerdefinierten/deaktivierten Shortcuts beim Umschalten anderer Tray-Optionen. Ein beim Start belegter Hotkey blockiert diese unabhängigen Optionen nicht.
+- Verständliche Anleitung statt Fenster-/Programmoperationen, solange noch kein Profil gespeichert ist.
+
+Die App wurde mit einem separaten leeren Datenordner gestartet. Ein echter Tastendruck über die Desktop-Automation konnte nicht abschließend geprüft werden: Der UI-Helfer meldete `GetCursorPos failed: Zugriff verweigert (0x80070005)`. Die nativen Registrierungs- und Nachrichtentests waren erfolgreich; die physische Tastenkombination bei ausgeblendeter UI bleibt eine manuelle Abnahme. Es wurden durch diese Prüfung keine Benutzerfenster wiederhergestellt oder Programme aus dem echten Profil gestartet.
+
+Manuelle Abnahme: Profil speichern, Einstellungsfenster schließen und aus einer anderen Anwendung Strg + Alt + R drücken. Danach Shortcut ändern/deaktivieren und die Änderung übernehmen; die bisherige Kombination darf anschließend keinen neuen Restore auslösen. Bei gedrückt gehaltener Taste und während laufender Wiederherstellung darf keine parallele Startwelle entstehen.
+
+## Installer 0.1.0 und 0.2.0
+
+Die Inno-Setup-7-Installer 0.1.0 und 0.2.0 wurden unter Windows in einem eigenen Zielordner tatsächlich installiert, gestartet, aktualisiert und wieder deinstalliert. `scripts/Test-Installer.ps1` hat jeweils alle **23 Prüfungen** bestanden:
 
 - EXE, mitgelieferte .NET-Laufzeit und lokale HTML-Anleitung werden installiert.
 - Startmenü-Verknüpfungen und benutzerbezogener Deinstallationseintrag sind vorhanden.
@@ -39,7 +55,7 @@ Der Test wartet auf den gesamten Installer-/Uninstaller-Prozessbaum, da Inno Uni
 ```
 
 - Formatter und .NET-Analyzer, Warnungen als Fehler.
-- 43 Kernlogiktests und 13 Infrastrukturtests, einschließlich unsichtbarer Snap-Rahmen, DPI-/Monitor-Fallbacks, persistiertem Andockzustand, Rückwärtskompatibilität und Teil-Erfolgsmeldungen bei fehlender nativer Andockung.
+- 48 Kernlogiktests, 14 Infrastrukturtests und 7 App-Tests, einschließlich unsichtbarer Snap-Rahmen, DPI-/Monitor-Fallbacks, persistiertem Andockzustand, Rückwärtskompatibilität, Teil-Erfolgsmeldungen und globalem Tastatur-Shortcut.
 - NuGet-Sicherheitsabgleich einschließlich transitiver Testabhängigkeiten.
 - 16 native Desktop-Prüfungen in der beobachteten Vier-Monitor-Konfiguration; Anzahl variiert mit vorhandenen Monitoren.
 - Ergebnisdatei `artifacts/desktop-smoke/result.json`; diese enthält die tatsächlich beobachteten Monitorgeometrien und bestandenen Prüfungen.

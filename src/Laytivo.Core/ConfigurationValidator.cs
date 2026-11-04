@@ -8,6 +8,8 @@ public static class ConfigurationValidator
             throw new InvalidDataException($"Nicht unterstützte Konfigurationsversion {config.SchemaVersion}. Erwartet: 1.");
         if (config.Settings is null || config.Settings.StartupDelaySeconds is not (0 or 5 or 15))
             throw new InvalidDataException("Ungültige Einstellungen oder Startverzögerung.");
+        if (!RestoreHotkey.IsValid(config.Settings.RestoreHotkeyModifiers, config.Settings.RestoreHotkeyKey))
+            throw new InvalidDataException("Ungültiger Tastatur-Shortcut. Unterstützt sind zwei oder drei Modifikatortasten mit A–Z oder F1–F11.");
         if (config.Workspace is not { } workspace) return;
         if (string.IsNullOrWhiteSpace(workspace.Id) || string.IsNullOrWhiteSpace(workspace.Name)
             || workspace.Monitors is null || workspace.Windows is null

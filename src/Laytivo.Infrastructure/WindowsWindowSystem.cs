@@ -84,7 +84,7 @@ public sealed class WindowsWindowSystem : IWindowSystem
                 ? SavedWindowState.Maximized : SavedWindowState.Normal;
             var snapped = placement.ShowCommand == 1 && IsWindowArranged(handle);
             DesktopRect? visible = null;
-            if (snapped && DwmGetFrameBounds(handle, 9, out var frame, Marshal.SizeOf<Rect>()) == 0)
+            if (placement.ShowCommand == 1 && DwmGetFrameBounds(handle, 9, out var frame, Marshal.SizeOf<Rect>()) == 0)
             {
                 var candidate = Convert(frame);
                 if (candidate.IsValid && candidate.X >= rect.X && candidate.Y >= rect.Y
@@ -102,7 +102,7 @@ public sealed class WindowsWindowSystem : IWindowSystem
         return result;
     }
 
-    public WindowPlacementResult PlaceWindow(LiveWindow window, DesktopRect bounds, SavedWindowState state)
+    public WindowPlacementResult PlaceWindow(LiveWindow window, DesktopRect bounds, SavedWindowState state, DesktopRect? visibleBounds = null)
     {
         GetWindowThreadProcessId(window.Handle, out var pid);
         if (!IsWindow(window.Handle) || pid != window.ProcessId)
@@ -116,7 +116,9 @@ public sealed class WindowsWindowSystem : IWindowSystem
         var placement = new WindowPlacement { Length = Marshal.SizeOf<WindowPlacement>() };
         if (!GetWindowPlacement(window.Handle, ref placement)) throw new Win32Exception(Marshal.GetLastWin32Error());
         if (state == SavedWindowState.Normal && placement.ShowCommand == 1
-            && GetWindowRect(window.Handle, out var existing) && Near(Convert(existing), bounds))
+            && (visibleBounds is { } targetFrame
+                ? DwmGetFrameBounds(window.Handle, 9, out var existingFrame, Marshal.SizeOf<Rect>()) == 0 && Near(Convert(existingFrame), targetFrame)
+                : GetWindowRect(window.Handle, out var existing) && Near(Convert(existing), bounds)))
             return new(IsWindowArranged(window.Handle));
         var preserveSnap = state == SavedWindowState.Normal && IsWindowArranged(window.Handle);
         placement.Flags = 4; // WPF_ASYNCWINDOWPLACEMENT; never wait for a hung target UI thread.
@@ -136,6 +138,10 @@ public sealed class WindowsWindowSystem : IWindowSystem
         }
         // Native async calls only acknowledge queuing. Confirm the resulting placement within a bounded interval.
         var watch = Stopwatch.StartNew();
+        DesktopRect? lastApplied = null;
+        var lastCorrection = TimeSpan.FromMilliseconds(-100);
+        var requested = bounds;
+        var lastRequest = TimeSpan.Zero;
         do
         {
             var actual = new WindowPlacement { Length = Marshal.SizeOf<WindowPlacement>() };
@@ -146,14 +152,39 @@ public sealed class WindowsWindowSystem : IWindowSystem
                     ? Convert(current) : new DesktopRect(actual.NormalPosition.Left + target.WorkArea.X - target.Bounds.X,
                         actual.NormalPosition.Top + target.WorkArea.Y - target.Bounds.Y,
                         actual.NormalPosition.Right - actual.NormalPosition.Left, actual.NormalPosition.Bottom - actual.NormalPosition.Top);
-                if (Near(applied, bounds)) return new(IsWindowArranged(window.Handle));
+                lastApplied = applied;
+                if (state == SavedWindowState.Normal && visibleBounds is { } wanted
+                    && GetWindowRect(window.Handle, out var outer)
+                    && DwmGetFrameBounds(window.Handle, 9, out var frame, Marshal.SizeOf<Rect>()) == 0)
+                {
+                    // Do not accept an old frame while an asynchronous move is still queued.
+                    if (!Near(Convert(outer), requested) || watch.Elapsed - lastRequest < TimeSpan.FromMilliseconds(100))
+                    { Thread.Sleep(25); continue; }
+                    var actualVisible = Convert(frame);
+                    if (Near(actualVisible, wanted)) return new(IsWindowArranged(window.Handle));
+                    // Snap and normal windows may have different invisible borders. Measure the
+                    // current frame after the move (and DPI transition), then correct in physical pixels.
+                    if (watch.Elapsed - lastCorrection >= TimeSpan.FromMilliseconds(100))
+                    {
+                        var corrected = new DesktopRect(outer.Left + wanted.X - frame.Left, outer.Top + wanted.Y - frame.Top,
+                            outer.Right - outer.Left + wanted.Width - actualVisible.Width,
+                            outer.Bottom - outer.Top + wanted.Height - actualVisible.Height);
+                        if (corrected.IsValid && !SetWindowPos(window.Handle, 0, corrected.X, corrected.Y,
+                            corrected.Width, corrected.Height, 0x0004 | 0x0010 | 0x4000))
+                            throw new Win32Exception(Marshal.GetLastWin32Error());
+                        requested = corrected;
+                        lastRequest = watch.Elapsed;
+                        lastCorrection = watch.Elapsed;
+                    }
+                }
+                else if (Near(applied, bounds) && watch.Elapsed >= TimeSpan.FromMilliseconds(100)) return new(IsWindowArranged(window.Handle));
             }
             Thread.Sleep(25);
-        } while (watch.Elapsed < TimeSpan.FromMilliseconds(400));
-        throw new InvalidOperationException("Die Anwendung hat die Zielposition/-größe oder den Fensterzustand nicht übernommen.");
+        } while (watch.Elapsed < TimeSpan.FromMilliseconds(1000));
+        throw new InvalidOperationException($"Die Anwendung hat die Zielposition/-größe oder den Fensterzustand nicht übernommen. Ziel: {bounds}; Ist: {lastApplied}.");
     }
 
     private static DesktopRect Convert(Rect rect) => new(rect.Left, rect.Top, rect.Right - rect.Left, rect.Bottom - rect.Top);
-    private static bool Near(DesktopRect actual, DesktopRect expected) => Math.Abs(actual.X - expected.X) <= 4
-        && Math.Abs(actual.Y - expected.Y) <= 4 && Math.Abs(actual.Width - expected.Width) <= 4 && Math.Abs(actual.Height - expected.Height) <= 4;
+    private static bool Near(DesktopRect actual, DesktopRect expected) => Math.Abs(actual.X - expected.X) <= 1
+        && Math.Abs(actual.Y - expected.Y) <= 1 && Math.Abs(actual.Width - expected.Width) <= 1 && Math.Abs(actual.Height - expected.Height) <= 1;
 }

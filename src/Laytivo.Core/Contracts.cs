@@ -17,7 +17,7 @@ public interface IWindowSystem
 {
     IReadOnlyList<MonitorSnapshot> GetMonitors();
     IReadOnlyList<LiveWindow> GetWindows();
-    WindowPlacementResult PlaceWindow(LiveWindow window, DesktopRect bounds, SavedWindowState state);
+    WindowPlacementResult PlaceWindow(LiveWindow window, DesktopRect bounds, SavedWindowState state, DesktopRect? visibleBounds = null);
 }
 
 public interface IApplicationLauncher

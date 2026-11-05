@@ -81,6 +81,11 @@ public sealed class WorkspaceRestoreService(IWindowSystem windows, IApplicationL
             }
             foreach (var entry in pending)
                 results[entry.Id] = Result(entry, RestoreOutcome.Failed, "Zeitüberschreitung: kein weiteres passendes Fenster. Zweitfenster benötigen ggf. eigene App-Startargumente.");
+            // Apps can reposition themselves while other startup windows are still appearing.
+            // Recheck existing matches against the final monitor topology after that shared wait.
+            if (wait.Elapsed >= _timing.PlacementRetry)
+                await PlaceAllAsync(workspace.Windows.Where(e => matches.ContainsKey(e.Id)).ToArray(), matches,
+                    workspace, windows.GetMonitors(), results, cancellationToken);
             var report = new RestoreReport(started, workspace.Windows.Select(e => results[e.Id]).ToArray());
             log.Write("restore", report);
             return report;
@@ -103,7 +108,8 @@ public sealed class WorkspaceRestoreService(IWindowSystem windows, IApplicationL
                 {
                     var source = workspace.Monitors.First(m => m.Id == entry.MonitorId);
                     var target = Geometry.SelectMonitor(source, monitors);
-                    var placed = windows.PlaceWindow(matches[entry.Id], Geometry.AdaptWindow(entry, source, target), entry.State);
+                    var visible = entry.VisibleBounds is { } frame ? Geometry.Adapt(frame, source, target) : null;
+                    var placed = windows.PlaceWindow(matches[entry.Id], Geometry.AdaptWindow(entry, source, target), entry.State, visible);
                     results[entry.Id] = entry.IsSnapped && !placed.IsSnapped
                         ? Result(entry, RestoreOutcome.PartiallyRestored,
                             "Position und Größe wiederhergestellt; Windows-Andockung/Snap-Gruppe konnte nicht neu erzeugt werden. Bei Bedarf manuell andocken.")

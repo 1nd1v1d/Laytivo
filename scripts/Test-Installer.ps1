@@ -63,14 +63,52 @@ try {
     'Eigene Datei: muss erhalten bleiben.' | Set-Content -LiteralPath (Join-Path $appDirectory 'user-note.txt')
     $ownCommand = '"' + (Join-Path $appDirectory 'Laytivo.exe') + '" --startup'
     $runKey.SetValue('Laytivo', $ownCommand, [Microsoft.Win32.RegistryValueKind]::String)
-    $testProcess = Start-Process -FilePath (Join-Path $appDirectory 'Laytivo.exe') -ArgumentList @('--data-directory', "`"$dataDirectory`"") -WindowStyle Hidden -PassThru
+    $testProcess = Start-Process -FilePath (Join-Path $appDirectory 'Laytivo.exe') -ArgumentList @('--startup', '--data-directory', "`"$dataDirectory`"") -WindowStyle Hidden -PassThru
     $ready = $false
     for ($i = 0; $i -lt 50; $i++) {
-        if (Test-Path -LiteralPath (Join-Path $dataDirectory 'logs\laytivo.jsonl')) { $ready = $true; break }
+        if (Test-Path -LiteralPath (Join-Path $dataDirectory 'logs\laytivo.jsonl')) {
+            $events = @(Get-Content -LiteralPath (Join-Path $dataDirectory 'logs\laytivo.jsonl') | ForEach-Object { $_ | ConvertFrom-Json })
+            if ($events | Where-Object { $_.action -eq 'started' -and $_.details.background }) { $ready = $true; break }
+        }
         if ($testProcess.HasExited) { break }
         Start-Sleep -Milliseconds 200
     }
     Check ($ready -and !$testProcess.HasExited) 'Installierte App startet ohne separat installiertes .NET'
+    Check $ready 'Autostartmodus erreicht mit leerem Testprofil den bereiten Hintergrundbetrieb'
+    $second = Start-Process -FilePath (Join-Path $appDirectory 'Laytivo.exe') -ArgumentList @('--data-directory', "`"$dataDirectory`"") -WindowStyle Hidden -PassThru
+    try {
+        Check ($second.WaitForExit(5000) -and $second.ExitCode -eq 0) 'Zweiter EXE-Aufruf beendet sich ohne Doppelinstanz'
+        $activated = $false
+        for ($i = 0; $i -lt 25; $i++) {
+            if (Select-String -LiteralPath (Join-Path $dataDirectory 'logs\laytivo.jsonl') -SimpleMatch 'instance-activated' -Quiet) { $activated = $true; break }
+            Start-Sleep -Milliseconds 200
+        }
+        Check $activated 'Zweiter EXE-Aufruf aktiviert die erste Hintergrundinstanz'
+    }
+    finally { if (!$second.HasExited) { Stop-Process -Id $second.Id }; $second.Dispose() }
+    Stop-Process -Id $testProcess.Id
+    $testProcess.WaitForExit(); $testProcess.Dispose()
+    $logPath = Join-Path $dataDirectory 'logs\laytivo.jsonl'
+    $before = @(Select-String -LiteralPath $logPath -SimpleMatch 'startup-restore-requested').Count
+    $testProcess = Start-Process -FilePath (Join-Path $appDirectory 'Laytivo.exe') -ArgumentList @('--data-directory', "`"$dataDirectory`"") -WindowStyle Hidden -PassThru
+    $manualReady = $false
+    for ($i = 0; $i -lt 50; $i++) {
+        $started = @(Get-Content -LiteralPath $logPath | ForEach-Object { $_ | ConvertFrom-Json } | Where-Object action -eq 'started')
+        if ($started.Count -ge 2) { $manualReady = $true; break }
+        Start-Sleep -Milliseconds 200
+    }
+    Check $manualReady 'Manueller Erststart für verzögerten Windows-Autostart bereit'
+    for ($request = 0; $request -lt 2; $request++) {
+        $forward = Start-Process -FilePath (Join-Path $appDirectory 'Laytivo.exe') -ArgumentList @('--startup', '--data-directory', "`"$dataDirectory`"") -WindowStyle Hidden -PassThru
+        try { if (!$forward.WaitForExit(5000)) { Stop-Process -Id $forward.Id; throw 'Autostart-Zweitinstanz hängt' } }
+        finally { $forward.Dispose() }
+        for ($i = 0; $i -lt 25; $i++) {
+            if (@(Select-String -LiteralPath $logPath -SimpleMatch 'startup-restore-requested').Count -gt $before) { break }
+            Start-Sleep -Milliseconds 200
+        }
+    }
+    Start-Sleep -Milliseconds 300
+    Check (@(Select-String -LiteralPath $logPath -SimpleMatch 'startup-restore-requested').Count -eq ($before + 1)) 'Verzögerter Autostart wird genau einmal an laufende Instanz weitergereicht'
     Check ((Install-Test 'blocked-update.log') -ne 0) 'Update wird bei laufender App kontrolliert blockiert'
     Check ((Uninstall-Test 'blocked-uninstall.log') -ne 0) 'Deinstallation wird bei laufender App kontrolliert blockiert'
     Stop-Process -Id $testProcess.Id

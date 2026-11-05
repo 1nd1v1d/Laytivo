@@ -28,6 +28,8 @@ public static class Geometry
 
     public static DesktopRect Adapt(DesktopRect saved, MonitorSnapshot source, MonitorSnapshot target)
     {
+        if (source.Id == target.Id && source.Bounds == target.Bounds && source.WorkArea == target.WorkArea
+            && source.DpiScale == target.DpiScale) return saved;
         var from = source.WorkArea;
         var to = target.WorkArea;
         var dpiRatio = target.DpiScale / source.DpiScale;

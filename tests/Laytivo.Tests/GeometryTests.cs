@@ -5,6 +5,14 @@ namespace Laytivo.Tests;
 public sealed class GeometryTests
 {
     [Fact]
+    public void UnchangedDisplayKeepsOuterResizeBordersAndSmallWindowsExactly()
+    {
+        var monitor = TestData.Monitor();
+        foreach (var rect in new DesktopRect[] { new(-8, 0, 1936, 1048), new(50, 50, 100, 80) })
+            Assert.Equal(rect, Geometry.Adapt(rect, monitor, monitor));
+    }
+
+    [Fact]
     public void SnapVisibleFrameRemainsFlushWithoutClippingInvisibleResizeBorders()
     {
         var monitor = TestData.Monitor();

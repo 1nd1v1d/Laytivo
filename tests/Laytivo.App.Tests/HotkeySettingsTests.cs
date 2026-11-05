@@ -83,7 +83,7 @@ public sealed class HotkeySettingsTests : IDisposable
     {
         public IReadOnlyList<MonitorSnapshot> GetMonitors() => throw new InvalidOperationException("Keine Fensteroperation erwartet.");
         public IReadOnlyList<LiveWindow> GetWindows() => throw new InvalidOperationException("Keine Fensteroperation erwartet.");
-        public WindowPlacementResult PlaceWindow(LiveWindow window, DesktopRect bounds, SavedWindowState state) => throw new InvalidOperationException();
+        public WindowPlacementResult PlaceWindow(LiveWindow window, DesktopRect bounds, SavedWindowState state, DesktopRect? visibleBounds = null) => throw new InvalidOperationException();
     }
     private sealed class FakeLog : ILocalLog { public void Write(string action, object details) { } }
     public void Dispose()

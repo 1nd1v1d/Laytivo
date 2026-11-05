@@ -24,7 +24,7 @@ internal sealed class FakeWindows : IWindowSystem
     public bool PlacementIsSnapped { get; set; }
     public IReadOnlyList<MonitorSnapshot> GetMonitors() => Monitors;
     public IReadOnlyList<LiveWindow> GetWindows() => Discover?.Invoke() ?? Live.ToArray();
-    public WindowPlacementResult PlaceWindow(LiveWindow window, DesktopRect bounds, SavedWindowState state)
+    public WindowPlacementResult PlaceWindow(LiveWindow window, DesktopRect bounds, SavedWindowState state, DesktopRect? visibleBounds = null)
     {
         if (window.Handle == FailHandle) throw new InvalidOperationException("Zugriff verweigert");
         Placements.Add((window.Handle, bounds, state));

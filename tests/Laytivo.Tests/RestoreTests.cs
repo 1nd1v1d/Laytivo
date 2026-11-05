@@ -104,7 +104,12 @@ public sealed class RestoreTests
         var launcher = new FakeLauncher { OnLaunch = _ => windows.Live.Add(new(2, 2, entry)) };
         var report = await Service(windows, launcher).RestoreAsync(TestData.Config(entry));
         Assert.Equal(RestoreOutcome.Restored, Assert.Single(report.Results).Outcome);
-        Assert.Equal(2, windows.Placements.Count);
+        Assert.NotEmpty(windows.Placements);
+        Assert.All(windows.Placements, placement =>
+        {
+            Assert.Equal((nint)2, placement.Handle);
+            Assert.Equal(entry.NormalBounds, placement.Bounds);
+        });
     }
 
     [Fact]

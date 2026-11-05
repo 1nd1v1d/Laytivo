@@ -1,6 +1,18 @@
 # Laytivo – Abnahme und Prüfprotokoll
 
-Stand: 04.11.2026. Automatisierte Tests prüfen Verhalten mit deterministischen Fakes und echten Dateien. Desktop-Smoke prüft echte Win32-Fenster, jedoch ausschließlich die eigenen Testprozesse. Ein Windows-Login wurde nicht simuliert und nicht ausgelöst.
+Stand: 05.11.2026. Automatisierte Tests prüfen Verhalten mit deterministischen Fakes und echten Dateien. Desktop-Smoke prüft echte Win32-Fenster, jedoch ausschließlich die eigenen Testprozesse. Ein Windows-Login wurde nicht simuliert und nicht ausgelöst.
+
+## Korrekturen 0.2.1
+
+Build ohne Warnungen/Fehler, Formatprüfung und **77 Tests** (54 Core, 16 Infrastructure, 7 App) bestanden. Der NuGet-Audit meldet keine bekannten anfälligen Pakete; Semgrep ist in dieser Umgebung nicht installiert.
+
+Der Desktop-Test besteht **18 Prüfungen auf vier Monitoren bei 125 % DPI**. Zusätzlich zu Wiederherstellung, Maximierung und fehlenden Testfenstern wird der Rahmen eines eigenen Fensters geändert. Nach dem Restore stimmen dessen sichtbare Kanten exakt mit den gespeicherten Pixelkoordinaten überein. Die Prüfung deckte eine zu frühe Erfolgsbestätigung noch ausstehender asynchroner Windows-Verschiebungen auf; diese wurde korrigiert.
+
+Die lokale Diagnose belegte geänderte EXE-Versionspfade bei Discord und Codex. Regressionsprüfungen erhalten deren Zuordnung, verlangen aber weiterhin dasselbe Installationsverzeichnis bzw. dieselbe Paketidentität samt Publisher. Ein anderer gleichnamiger EXE-Pfad wird nicht wiederverwendet. Unveränderte Monitore behalten auch überstehende unsichtbare Rahmen und kleine Fenster exakt bei.
+
+Der vorhandene HKCU-Autostart-Eintrag war lesbar; im bisherigen Protokoll war kein automatischer Start nach der Anmeldung erkennbar. Ein direkter `--startup`-Start der bisherigen portablen EXE mit leerem Testprofil war erfolgreich. Der ursprüngliche Ausfall beim Windows-Login bleibt damit nicht eindeutig rekonstruiert. Die Korrektur erfasst Startanforderungen vor der Instanzprüfung, reicht verspäteten Autostart genau einmal an die laufende Instanz weiter und wartet vor Restore auf stabile Monitore. Eine Windows-Neuanmeldung bzw. ein echter Neustart bleibt manuell zu prüfen.
+
+Der erweiterte Installer-Test prüft zusätzlich Hintergrundstart, Aktivierung der laufenden Instanz und einmalige Weiterleitung eines verspäteten Autostarts. Persönliche Konfigurationen und Diagnoseausgaben bleiben ausschließlich in lokalen, ignorierten Daten-/Artefaktordnern.
 
 ## Globaler Shortcut 0.2.0
 

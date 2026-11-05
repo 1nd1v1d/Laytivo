@@ -148,10 +148,29 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         if (_configurationBlocked || !_configuration.Settings.RestoreAfterLogin || _configuration.Workspace is null) return;
         try
         {
+            _log.Write("startup-restore-waiting", new { _configuration.Settings.StartupDelaySeconds });
             await Task.Delay(TimeSpan.FromSeconds(_configuration.Settings.StartupDelaySeconds), _lifetime.Token);
+            // Display drivers may finish reconnecting monitors after the shell has started.
+            var deadline = DateTime.UtcNow.AddSeconds(30);
+            IReadOnlyList<MonitorSnapshot> previous = [];
+            var stable = 0;
+            while (DateTime.UtcNow < deadline)
+            {
+                var monitors = await Task.Run(_windows.GetMonitors, _lifetime.Token);
+                stable = monitors.Count > 0 && monitors.SequenceEqual(previous) ? stable + 1 : 0;
+                previous = monitors;
+                if (stable >= 2 && _configuration.Workspace.Monitors.All(saved => monitors.Any(m => m.Id == saved.Id))) break;
+                await Task.Delay(1000, _lifetime.Token);
+            }
+            _log.Write("startup-restore-ready", new { monitors = previous.Count });
             await RestoreAsync();
         }
         catch (OperationCanceledException) { }
+        catch (Exception ex)
+        {
+            Status = $"Wiederherstellung nach Anmeldung fehlgeschlagen: {ex.Message}";
+            _log.Write("startup-restore-failed", new { error = ex.ToString() });
+        }
     }
 
     private void ApplySettings(bool configureHotkey = true)

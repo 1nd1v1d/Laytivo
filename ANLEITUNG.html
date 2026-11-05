@@ -20,16 +20,16 @@
 <body><main>
   <h1>Laytivo</h1>
   <p class="lead">Deine Fensteranordnung speichern und wieder an ihren Platz bringen.</p>
-  <p>Diese Anleitung gilt für die Windows-11-x64-Vorschauversion 0.2.0. Die Anwendung läuft lokal und offline. Sie benötigt keine Administratorrechte und sammelt keine Fensterinhalte oder Screenshots.</p>
+  <p>Diese Anleitung gilt für die Windows-11-x64-Vorschauversion 0.2.1. Die Anwendung läuft lokal und offline. Sie benötigt keine Administratorrechte und sammelt keine Fensterinhalte oder Screenshots.</p>
 
   <h2>1. Herunterladen und installieren</h2>
   <ol>
-    <li>Öffne die <a href="https://github.com/1nd1v1d/Laytivo/releases">Laytivo-Releases auf GitHub</a> und lade <strong>Laytivo-Setup-0.2.0-x64.exe</strong> herunter. Der Download ist öffentlich und benötigt keine GitHub-Anmeldung.</li>
+    <li>Öffne die <a href="https://github.com/1nd1v1d/Laytivo/releases">Laytivo-Releases auf GitHub</a> und lade <strong>Laytivo-Setup-0.2.1-x64.exe</strong> herunter. Der Download ist öffentlich und benötigt keine GitHub-Anmeldung.</li>
     <li>Falls Laytivo bereits läuft: Rechtsklick auf das Tray-Symbol neben der Uhr → <strong>Laytivo beenden</strong>. Das bloße Schließen des Einstellungsfensters reicht nicht.</li>
     <li>Starte die Installerdatei. Sie installiert standardmäßig nach <code>%LocalAppData%\Programs\Laytivo</code> und erstellt einen Startmenüeintrag. Eine Desktop-Verknüpfung ist optional.</li>
     <li>Zum Abschluss kannst du <strong>Laytivo jetzt starten</strong> auswählen. Die .NET-Laufzeit ist enthalten; du musst sie nicht separat installieren.</li>
   </ol>
-  <p class="note">Die Vorschauversion ist nicht codesigniert. Prüfe vor dem Ausführen, dass die Datei aus deinem Laytivo-Release stammt. Mit PowerShell <code>Get-FileHash .\Laytivo-Setup-0.2.0-x64.exe -Algorithm SHA256</code> kannst du die Prüfsumme mit <code>SHA256SUMS.txt</code> aus demselben Release vergleichen.</p>
+  <p class="note">Die Vorschauversion ist nicht codesigniert. Prüfe vor dem Ausführen, dass die Datei aus deinem Laytivo-Release stammt. Mit PowerShell <code>Get-FileHash .\Laytivo-Setup-0.2.1-x64.exe -Algorithm SHA256</code> kannst du die Prüfsumme mit <code>SHA256SUMS.txt</code> aus demselben Release vergleichen.</p>
 
   <h2>2. Deine erste Anordnung speichern</h2>
   <ol>
@@ -56,10 +56,13 @@
     <li><strong>Startverzögerung:</strong> 0, 5 oder 15 Sekunden; Standard ist 5.</li>
   </ul>
   <p>Klicke anschließend auf <strong>Einstellungen übernehmen</strong>. Die Autostart-Option wird tatsächlich im Benutzerkonto eingerichtet. Manuelles Wiederherstellen funktioniert auch bei deaktiviertem Autostart.</p>
+  <p>Version 0.2.1 berücksichtigt auch eine Deaktivierung im Windows-Task-Manager. Erneutes Aktivieren und Übernehmen in Laytivo richtet den Eintrag wieder ein. Alternativ repariert <code>.\Laytivo.exe --enable-autostart</code> den Autostart für genau diese EXE. Beim Wechsel des Programmordners muss der Eintrag erneut eingerichtet werden. Windows kann Autostart-Programme verzögert ausführen; ein späterer Aufruf wird jetzt auch an eine bereits laufende Laytivo-Instanz weitergereicht.</p>
+  <p>Vor dem Login-Restore wartet Laytivo zusätzlich bis zu 30 Sekunden auf die gespeicherten Monitore und eine stabile Bildschirmkonfiguration. Startanforderung und Restore-Bereitschaft werden im lokalen Protokoll aufgezeichnet.</p>
 
   <h2>6. Windows-Andockung und bekannte Grenzen</h2>
   <p>Die aktuelle Anordnung von Windows-Snap-Fenstern wird gespeichert. Noch vorhandene native Andockungen sollen beim Restore erhalten bleiben. <strong>Bereits gelöste Andockungen und geschlossene Windows-Snap-Gruppen werden nicht neu erzeugt.</strong> In diesem Fall werden Position und Größe hergestellt und ein Teilerfolg gemeldet. Bei Bedarf dockst du die Fenster erneut manuell mit Windows an.</p>
   <p>Nach dem Update von einer früheren Entwicklungsversion bitte einmal neu speichern, damit Andockzustand und sichtbare Rahmenabmessungen im Profil enthalten sind. Die neue native Andockerhaltung ist noch nicht abschließend live abgenommen.</p>
+  <p>Version 0.2.1 erkennt laufende Apps auch nach einem Wechsel bekannter Versionsordner, etwa bei Discord und Store-Apps. Die sichtbaren Fensterkanten werden beim Wiederherstellen überprüft und unterschiedliche unsichtbare Rahmen ausgeglichen. Bei unveränderten Monitoren bleiben gespeicherte Maße exakt erhalten. Neu gespeicherte Profile enthalten sichtbare Rahmenmaße auch für normale Fenster.</p>
   <p>Das Starten einer EXE stellt keine Garantie für dieselben Browser-Tabs, Dokumente oder IDE-Projekte dar. Store-/UWP-Apps und bekannte Hilfsprozesse sind nicht allgemein automatisch startbar. Erhöhte oder besonders verwaltete Fenster können eine Positionierung verweigern. Fehlende Monitore werden durch einen sichtbaren Fallback ersetzt, ohne das gespeicherte Originalprofil zu verändern.</p>
 
   <h2>7. Updates und Wechsel von der portablen Version</h2>
@@ -78,6 +81,6 @@
     <li><strong>Autostart bleibt aus:</strong> Einstellung übernehmen und zusätzlich die Windows-Autostart-Einstellungen prüfen.</li>
     <li><strong>Konfiguration nicht lesbar:</strong> Originaldatei sichern; der ausdrückliche Befehl zum Archivieren ermöglicht einen Neuanfang.</li>
   </ul>
-  <footer>Laytivo 0.2.0 · Stand 04.11.2026 · Vollständige manuelle Login-/Hardware-Abnahme noch offen. Quellcode und Teststand: GitHub-Repository Laytivo.</footer>
+  <footer>Laytivo 0.2.1 · Stand 05.11.2026 · Vollständige manuelle Login-/Hardware-Abnahme noch offen. Quellcode und Teststand: GitHub-Repository Laytivo.</footer>
 </main></body>
 </html>

@@ -21,12 +21,41 @@ internal static class Program
                 Bounds = new System.Drawing.Rectangle(80, 90, 640, 460)
             };
             form.Controls.Add(new Label { Text = "Temporäres Laytivo-Testfenster", AutoSize = true, Location = new(30, 35) });
+            using var frameChange = new EventWaitHandle(false, EventResetMode.AutoReset, @"Local\Laytivo.Frame-" + args[1]);
+            using var timer = new System.Windows.Forms.Timer { Interval = 50 };
+            if (args[2] == "Normal")
+            {
+                timer.Tick += (_, _) => { if (frameChange.WaitOne(0)) form.FormBorderStyle = FormBorderStyle.None; };
+                timer.Start();
+            }
             if (args[2] == "Maximized") form.Shown += (_, _) => form.WindowState = FormWindowState.Maximized;
             System.Windows.Forms.Application.Run(form);
             return 0;
         }
         if (args.Length != 2 || args[0] != "--run")
         {
+            if (args.Length == 3 && args[0] == "--diagnose")
+            {
+                var system = new WindowsWindowSystem();
+                var config = new ConfigurationStore(Path.GetFullPath(args[1])).Load();
+                var monitors = system.GetMonitors();
+                var live = system.GetWindows();
+                var matches = WindowMatchingService.Match(config.Workspace!.Windows, live);
+                File.WriteAllText(args[2], JsonSerializer.Serialize(new
+                {
+                    monitors,
+                    windows = config.Workspace.Windows.Select(saved => new
+                    {
+                        saved,
+                        target = Geometry.SelectMonitor(config.Workspace.Monitors.Single(m => m.Id == saved.MonitorId), monitors),
+                        expected = Geometry.AdaptWindow(saved, config.Workspace.Monitors.Single(m => m.Id == saved.MonitorId),
+                            Geometry.SelectMonitor(config.Workspace.Monitors.Single(m => m.Id == saved.MonitorId), monitors)),
+                        actual = matches.GetValueOrDefault(saved.Id)?.Window
+                    }),
+                    live = live.Select(w => w.Window)
+                }, new JsonSerializerOptions { WriteIndented = true }));
+                return 0;
+            }
             if (args.Length == 2 && args[0] == "--verify-snap-capture")
                 return VerifySnapCapture(Path.GetFullPath(args[1]));
             Console.WriteLine("Nutzung: Laytivo.DesktopSmoke.exe --run <Ergebnisverzeichnis>. Öffnet und schließt ausschließlich eigene Testfenster.");
@@ -160,6 +189,14 @@ internal static class Program
                 Check(current.Window.State == entry.State, $"Zustand geprüft: {entry.State}", checks);
                 Check(Near(current.Window.NormalBounds, entry.NormalBounds), $"Normalgeometrie geprüft: {entry.State}", checks);
             }
+            using (var frameChange = EventWaitHandle.OpenExisting(@"Local\Laytivo.Frame-" + token)) frameChange.Set();
+            await Task.Delay(600);
+            report = await restore.RestoreAsync(configuration);
+            Check(report.Results.All(r => r.Outcome == RestoreOutcome.Restored), "Rahmenänderung nach App-Neustart ausgeglichen", checks);
+            var corrected = system.GetWindows().Single(w => w.Handle == normal.Handle).Window;
+            var savedNormal = configuration.Workspace.Windows.Single(w => w.State == SavedWindowState.Normal);
+            Console.WriteLine(JsonSerializer.Serialize(new { saved = savedNormal.VisibleBounds, actual = corrected.VisibleBounds, corrected.NormalBounds }));
+            Check(corrected.VisibleBounds == savedNormal.VisibleBounds, "Sichtbare Position und Größe trotz geändertem Rahmen pixelgenau", checks);
             // Exercise physical placement on every currently connected display, including negative origins.
             foreach (var target in monitors)
             {

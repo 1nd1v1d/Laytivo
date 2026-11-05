@@ -4,7 +4,9 @@ Laytivo speichert eine manuell eingerichtete Windows-Fensteranordnung und stellt
 
 ## Direkt starten / installieren
 
-Den Installer gibt es unter [GitHub Releases](https://github.com/1nd1v1d/Laytivo/releases). Repository und Downloads sind öffentlich und ohne GitHub-Anmeldung erreichbar. `Laytivo-Setup-0.2.0-x64.exe` installiert pro Benutzer ohne Administratorrechte, inklusive .NET-Laufzeit, Startmenü-Verknüpfungen und optionalem Desktop-Symbol. **Vor Installation, Update oder Deinstallation Laytivo über das Tray-Menü beenden.**
+Version 0.2.1 korrigiert die Fenstererkennung nach App-Updates, erhält exakte Maße bei unveränderten Monitoren und gleicht geänderte unsichtbare Fensterrahmen aus. Der Login-Restore wartet auf die Monitore; verspätete Autostart-Aufrufe erreichen auch eine schon laufende Instanz. Ein erneuter manueller EXE-Aufruf öffnet deren Einstellungen. Eine echte Windows-Neuanmeldung bleibt als manuelle Abnahme erforderlich.
+
+Den Installer gibt es unter [GitHub Releases](https://github.com/1nd1v1d/Laytivo/releases). Repository und Downloads sind öffentlich und ohne GitHub-Anmeldung erreichbar. `Laytivo-Setup-0.2.1-x64.exe` installiert pro Benutzer ohne Administratorrechte, inklusive .NET-Laufzeit, Startmenü-Verknüpfungen und optionalem Desktop-Symbol. **Vor Installation, Update oder Deinstallation Laytivo über das Tray-Menü beenden.**
 
 Die ausführliche [Installations- und Bedienungsanleitung](ANLEITUNG.html) wird mitinstalliert und ist auch als eigene Release-Datei verfügbar. Der Installer löscht bei der Deinstallation keine Profile oder Einstellungen. Die Vorschauversion ist nicht codesigniert; zu den Release-Dateien gehören SHA-256-Prüfsummen.
 

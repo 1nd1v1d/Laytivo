@@ -34,7 +34,7 @@ public static class ConfigurationValidator
                 throw new InvalidDataException("Ungültige Fensterinformationen im Standardprofil.");
             if (window.IsSnapped && window.State != SavedWindowState.Normal)
                 throw new InvalidDataException("Ein maximiertes Fenster kann nicht gleichzeitig angedockt sein.");
-            if (window.VisibleBounds is { } visible && (!visible.IsValid || !window.IsSnapped
+            if (window.VisibleBounds is { } visible && (!visible.IsValid || window.State != SavedWindowState.Normal
                 || visible.X < window.NormalBounds.X || visible.Y < window.NormalBounds.Y
                 || visible.X + visible.Width > window.NormalBounds.X + window.NormalBounds.Width
                 || visible.Y + visible.Height > window.NormalBounds.Y + window.NormalBounds.Height

@@ -12,7 +12,7 @@ Die lokale Diagnose belegte geänderte EXE-Versionspfade bei Discord und Codex. 
 
 Der vorhandene HKCU-Autostart-Eintrag war lesbar; im bisherigen Protokoll war kein automatischer Start nach der Anmeldung erkennbar. Ein direkter `--startup`-Start der bisherigen portablen EXE mit leerem Testprofil war erfolgreich. Der ursprüngliche Ausfall beim Windows-Login bleibt damit nicht eindeutig rekonstruiert. Die Korrektur erfasst Startanforderungen vor der Instanzprüfung, reicht verspäteten Autostart genau einmal an die laufende Instanz weiter und wartet vor Restore auf stabile Monitore. Eine Windows-Neuanmeldung bzw. ein echter Neustart bleibt manuell zu prüfen.
 
-Der erweiterte Installer-Test prüft zusätzlich Hintergrundstart, Aktivierung der laufenden Instanz und einmalige Weiterleitung eines verspäteten Autostarts. Persönliche Konfigurationen und Diagnoseausgaben bleiben ausschließlich in lokalen, ignorierten Daten-/Artefaktordnern.
+Der Installer 0.2.1 besteht **28 Prüfungen** einschließlich Hintergrundstart, Aktivierung der laufenden Instanz und einmaliger Weiterleitung eines verspäteten Autostarts. Installation, blockiertes Update bei laufender App, anschließendes Update, Deinstallation und Erhaltung von Profil und fremden Autostart-Einträgen wurden in einem isolierten Zielordner geprüft. Persönliche Konfigurationen und Diagnoseausgaben bleiben ausschließlich in lokalen, ignorierten Daten-/Artefaktordnern.
 
 ## Globaler Shortcut 0.2.0
 

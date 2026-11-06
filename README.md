@@ -4,9 +4,11 @@ Laytivo speichert eine manuell eingerichtete Windows-Fensteranordnung und stellt
 
 ## Direkt starten / installieren
 
+Version 0.2.2 richtet den Autostart als `Laytivo.lnk` im persönlichen Windows-Autostartordner (`shell:startup`) ein. Nach dem echten Neustart fehlte der bisherige Registry-Eintrag, obwohl die Einstellung aktiviert blieb. Bestehende aktivierte eigene Einträge werden beim App-Start in die Verknüpfung übernommen; deaktivierte Einträge bleiben deaktiviert. Wer den Eintrag entfernt hat, ist nicht bekannt; der erste echte Login mit der neuen Verknüpfung bleibt zu prüfen.
+
 Version 0.2.1 korrigiert die Fenstererkennung nach App-Updates, erhält exakte Maße bei unveränderten Monitoren und gleicht geänderte unsichtbare Fensterrahmen aus. Der Login-Restore wartet auf die Monitore; verspätete Autostart-Aufrufe erreichen auch eine schon laufende Instanz. Ein erneuter manueller EXE-Aufruf öffnet deren Einstellungen. Eine echte Windows-Neuanmeldung bleibt als manuelle Abnahme erforderlich.
 
-Den Installer gibt es unter [GitHub Releases](https://github.com/1nd1v1d/Laytivo/releases). Repository und Downloads sind öffentlich und ohne GitHub-Anmeldung erreichbar. `Laytivo-Setup-0.2.1-x64.exe` installiert pro Benutzer ohne Administratorrechte, inklusive .NET-Laufzeit, Startmenü-Verknüpfungen und optionalem Desktop-Symbol. **Vor Installation, Update oder Deinstallation Laytivo über das Tray-Menü beenden.**
+Den Installer gibt es unter [GitHub Releases](https://github.com/1nd1v1d/Laytivo/releases). Repository und Downloads sind öffentlich und ohne GitHub-Anmeldung erreichbar. `Laytivo-Setup-0.2.2-x64.exe` installiert pro Benutzer ohne Administratorrechte, inklusive .NET-Laufzeit, Startmenü-Verknüpfungen und optionalem Desktop-Symbol. **Vor Installation, Update oder Deinstallation Laytivo über das Tray-Menü beenden.**
 
 Die ausführliche [Installations- und Bedienungsanleitung](ANLEITUNG.html) wird mitinstalliert und ist auch als eigene Release-Datei verfügbar. Der Installer löscht bei der Deinstallation keine Profile oder Einstellungen. Die Vorschauversion ist nicht codesigniert; zu den Release-Dateien gehören SHA-256-Prüfsummen.
 
@@ -31,12 +33,12 @@ Die Implementierung nutzt `RegisterHotKey` mit `MOD_NOREPEAT` und ein unsichtbar
 
 | Einstellung | Standard | Wirkung |
 |---|---|---|
-| Mit Windows starten | Aus | Benutzerbezogener Eintrag `HKCU\Software\Microsoft\Windows\CurrentVersion\Run\Laytivo` mit `"…\Laytivo.exe" --startup` |
+| Mit Windows starten | Aus | `Laytivo.lnk` im persönlichen Windows-Autostartordner; EXE, Argument `--startup` und Arbeitsverzeichnis getrennt gespeichert |
 | Nach Anmeldung wiederherstellen | Ein | Wiederherstellung nur bei Start mit `--startup`; ein normaler manueller App-Start verschiebt keine Fenster |
 | Fehlende Programme starten | Ein | Startet unterstützte fehlende EXEs; bei Aus werden nur offene passende Fenster verwendet |
 | Startverzögerung | 5 Sekunden | Auswahl 0 / 5 / 15; nur für die automatische Wiederherstellung |
 
-„Mit Windows starten“ wird tatsächlich im Betriebssystem umgesetzt. Der aktuelle eigene Run-Eintrag wird beim Start gelesen. Falls Windows den Autostart zusätzlich in seinen Einstellungen deaktiviert, muss er dort wieder freigegeben werden. Ein manuelles Wiederherstellen funktioniert unabhängig von beiden Autostart-Optionen. Ohne gespeichertes Profil startet Laytivo keine Programme. `--startup` öffnet kein Hauptfenster und keine blockierenden Dialoge.
+„Mit Windows starten“ wird tatsächlich im Betriebssystem umgesetzt. Verknüpfung und Windows-Deaktivierungsstatus werden beim Start gelesen. Erneutes Aktivieren und Übernehmen richtet die Verknüpfung ein; `Laytivo.exe --enable-autostart` ermöglicht dieselbe Reparatur direkt. Der bisherige eigene Run-Eintrag wird erst nach erfolgreichem Speichern der Verknüpfung entfernt. Ein manuelles Wiederherstellen funktioniert unabhängig von beiden Autostart-Optionen. Ohne gespeichertes Profil startet Laytivo keine Programme. `--startup` öffnet kein Hauptfenster und keine blockierenden Dialoge.
 
 ## Build und Prüfungen
 
@@ -76,7 +78,7 @@ dotnet test tests/Laytivo.Tests -c Release
 ## Architektur
 
 - `src/Laytivo.Core`: unveränderliche Datenmodelle, Validierung, Auswahl/Erfassung, Fensterzuordnung, Geometrie und Restore-Orchestrierung; ohne Windows-Abhängigkeit.
-- `src/Laytivo.Infrastructure`: Win32/PInvoke, Prozessstart, HKCU-Autostart, atomarer JSON-Store und begrenzte strukturierte Logs.
+- `src/Laytivo.Infrastructure`: Win32/PInvoke, Prozessstart, Windows-Autostartverknüpfung, atomarer JSON-Store und begrenzte strukturierte Logs.
 - `src/Laytivo.App`: WPF/MVVM mit expliziter Komposition der Dienste, Windows-Forms-NotifyIcon und benutzerbezogenem Single-Instance-Mutex. Kein zusätzlicher DI-Container oder Tray-Anbieter.
 - `tests/Laytivo.Tests`: Kernlogik und Ablauf mit kontrollierten Abhängigkeiten.
 - `tests/Laytivo.Infrastructure.Tests`: Persistenz, Validierung, Archivierung, Log-Aufbewahrung und Startvalidierung.
@@ -106,7 +108,7 @@ Standardverzeichnis: `%LocalAppData%\Laytivo\`.
 - `logs/laytivo.jsonl` und bis zu vier Rotationen: strukturierte lokale Diagnose, Rotation ab ungefähr 1 MiB (ein zusätzlicher Eintrag kann die Grenze überschreiten).
 - Ungültige/inkompatible Konfigurationen werden gemeldet; Speichern/Restore bleiben gesperrt. Der explizite UI-Befehl archiviert die Originaldatei als `.invalid-…` und erlaubt einen Neuanfang. Keine automatische Rückmigration oder stille Überschreibung.
 
-Updates: Laytivo über das Tray beenden und den neuen Installer mit demselben Zielordner ausführen; bei portabler Nutzung stattdessen den Programmordner ersetzen. Nutzerdaten liegen außerhalb des Programmordners. Bei Änderung des Installationsorts die Autostart-Einstellung erneut übernehmen. Installierte Versionen über Windows „Installierte Apps“ deinstallieren. Der Uninstaller entfernt nur einen exakt zur installierten EXE gehörenden Run-Eintrag und lässt Benutzerprofile erhalten. Portable Versionen nach Deaktivierung ihres Autostarts und Beenden durch Entfernen des Programmordners löschen. Nutzerdaten können bei Bedarf separat entfernt werden.
+Updates: Laytivo über das Tray beenden und den neuen Installer mit demselben Zielordner ausführen; bei portabler Nutzung stattdessen den Programmordner ersetzen. Nutzerdaten liegen außerhalb des Programmordners. Bei Änderung des Installationsorts die Autostart-Einstellung erneut übernehmen. Installierte Versionen über Windows „Installierte Apps“ deinstallieren. Der Uninstaller entfernt nur zur installierten EXE gehörende Autostart-Verknüpfungen und alte Run-Einträge; Benutzerprofile bleiben erhalten. Portable Versionen nach Deaktivierung ihres Autostarts und Beenden durch Entfernen des Programmordners löschen. Nutzerdaten können bei Bedarf separat entfernt werden.
 
 Für isolierte Entwicklungs-/UI-Prüfungen: `Laytivo.exe --data-directory "C:\Pfad\zu\Testdaten"`. Der Windows-Autostart gehört weiterhin zum Benutzerkonto und wird durch diesen Parameter nicht isoliert; dort keine Autostart-Änderung für einen Test vornehmen.
 

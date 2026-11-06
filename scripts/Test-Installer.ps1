@@ -22,6 +22,14 @@ $userProfileHash = if (Test-Path -LiteralPath $userProfilePath) { (Get-FileHash 
 $runKey = [Microsoft.Win32.Registry]::CurrentUser.CreateSubKey('Software\Microsoft\Windows\CurrentVersion\Run')
 $oldRun = $runKey.GetValue('Laytivo', $null, [Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames)
 $oldRunKind = if ($null -ne $oldRun) { $runKey.GetValueKind('Laytivo') } else { $null }
+$startupLink = Join-Path ([Environment]::GetFolderPath('Startup')) 'Laytivo.lnk'
+$startupBackup = Join-Path $testRoot 'original-startup.lnk'
+if (Test-Path -LiteralPath $startupLink) { Copy-Item -LiteralPath $startupLink -Destination $startupBackup }
+$approvalSnapshots = foreach ($entry in @(@{ Branch='Run'; Name='Laytivo' }, @{ Branch='StartupFolder'; Name='Laytivo.lnk' })) {
+    $key = [Microsoft.Win32.Registry]::CurrentUser.CreateSubKey('Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\' + $entry.Branch)
+    $value = $key.GetValue($entry.Name)
+    @{ Key=$key; Name=$entry.Name; Value=$value; Kind=$(if ($null -ne $value) { $key.GetValueKind($entry.Name) } else { $null }) }
+}
 $checks = [Collections.Generic.List[string]]::new()
 $originalProcesses = @()
 $testProcess = $null
@@ -48,6 +56,8 @@ function Uninstall-Test([string]$LogName) {
 }
 
 try {
+    if (Test-Path -LiteralPath $startupLink) { Remove-Item -LiteralPath $startupLink }
+    foreach ($snapshot in $approvalSnapshots) { $snapshot.Key.DeleteValue($snapshot.Name, $false) }
     # Stop only running instances from this workspace, then restore them in finally.
     $workspaceExe = Join-Path $projectRoot 'artifacts\Laytivo\Laytivo.exe'
     $originalProcesses = @(Get-CimInstance Win32_Process -Filter "Name = 'Laytivo.exe'" | Where-Object { $_.ExecutablePath -eq $workspaceExe })
@@ -74,6 +84,8 @@ try {
         Start-Sleep -Milliseconds 200
     }
     Check ($ready -and !$testProcess.HasExited) 'Installierte App startet ohne separat installiertes .NET'
+    Check (Test-Path -LiteralPath $startupLink) 'Alter Run-Eintrag wird in eine persistente Autostart-Verknüpfung übernommen'
+    Check ($null -eq $runKey.GetValue('Laytivo')) 'Alter eigener Run-Eintrag nach Migration entfernt'
     Check $ready 'Autostartmodus erreicht mit leerem Testprofil den bereiten Hintergrundbetrieb'
     $second = Start-Process -FilePath (Join-Path $appDirectory 'Laytivo.exe') -ArgumentList @('--data-directory', "`"$dataDirectory`"") -WindowStyle Hidden -PassThru
     try {
@@ -122,14 +134,25 @@ try {
     Check (!(Test-Path -LiteralPath $uninstallKey)) 'Deinstallationseintrag entfernt'
     Check (!(Test-Path -LiteralPath (Join-Path $groupDirectory 'Laytivo.lnk'))) 'Startmenü-Verknüpfung entfernt'
     Check ($null -eq $runKey.GetValue('Laytivo')) 'Eigener Autostart-Eintrag entfernt'
+    Check (!(Test-Path -LiteralPath $startupLink)) 'Eigene Autostart-Verknüpfung bei Deinstallation entfernt'
     Check ((Get-FileHash -LiteralPath $profilePath).Hash -eq $profileHash) 'Nutzerdaten bleiben nach Deinstallation erhalten'
     Check (Test-Path -LiteralPath (Join-Path $appDirectory 'user-note.txt')) 'Nicht installierte Benutzerdateien werden nicht gelöscht'
 
     Check ((Install-Test 'install-foreign-run.log') -eq 0) 'Erneute Installation für Autostart-Abgrenzung erfolgreich'
     $foreignCommand = if ($null -ne $oldRun) { $oldRun } else { '"C:\OtherPortableLaytivo\Laytivo.exe" --startup' }
     $runKey.SetValue('Laytivo', $foreignCommand, [Microsoft.Win32.RegistryValueKind]::String)
+    $shell = New-Object -ComObject WScript.Shell
+    $shortcut = $shell.CreateShortcut($startupLink)
+    $shortcut.TargetPath = 'C:\OtherPortableLaytivo\Laytivo.exe'
+    $shortcut.Arguments = '--startup'
+    $shortcut.WorkingDirectory = 'C:\OtherPortableLaytivo'
+    $shortcut.Save()
+    [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($shortcut)
+    [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($shell)
+    $foreignShortcutHash = (Get-FileHash -LiteralPath $startupLink).Hash
     Check ((Uninstall-Test 'uninstall-foreign-run.log') -eq 0) 'Zweite Deinstallation erfolgreich'
     Check ($runKey.GetValue('Laytivo') -eq $foreignCommand) 'Autostart einer anderen Installation bleibt erhalten'
+    Check ((Get-FileHash -LiteralPath $startupLink).Hash -eq $foreignShortcutHash) 'Autostart-Verknüpfung einer anderen Kopie bleibt unverändert'
     $userProfileAfter = if (Test-Path -LiteralPath $userProfilePath) { (Get-FileHash -LiteralPath $userProfilePath).Hash } else { $null }
     Check ($userProfileHash -eq $userProfileAfter) 'Echtes Benutzerprofil während aller Prüfungen unverändert'
     @{ passed = $true; timeUtc = [DateTimeOffset]::UtcNow; checks = $checks; version = $version } | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $testRoot 'result.json')
@@ -144,6 +167,13 @@ finally {
     if (Test-Path -LiteralPath (Join-Path $appDirectory 'unins000.exe')) { $null = Uninstall-Test 'cleanup.log' }
     if ($null -eq $oldRun) { $runKey.DeleteValue('Laytivo', $false) } else { $runKey.SetValue('Laytivo', $oldRun, $oldRunKind) }
     $runKey.Dispose()
+    if (Test-Path -LiteralPath $startupLink) { Remove-Item -LiteralPath $startupLink }
+    if (Test-Path -LiteralPath $startupBackup) { Copy-Item -LiteralPath $startupBackup -Destination $startupLink }
+    foreach ($snapshot in $approvalSnapshots) {
+        if ($null -eq $snapshot.Value) { $snapshot.Key.DeleteValue($snapshot.Name, $false) }
+        else { $snapshot.Key.SetValue($snapshot.Name, $snapshot.Value, $snapshot.Kind) }
+        $snapshot.Key.Dispose()
+    }
     foreach ($original in $originalProcesses) {
         $prefix = if ($original.CommandLine.StartsWith('"')) { '"' + $original.ExecutablePath + '"' } else { $original.ExecutablePath }
         $arguments = ($original.CommandLine.Substring($prefix.Length).Trim() -replace '(?i)(?<!\S)--startup(?!\S)', '').Trim()

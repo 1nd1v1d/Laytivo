@@ -58,9 +58,31 @@ procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 var
   CurrentCommand: String;
   OwnCommand: String;
+  ShortcutPath: String;
+  Shell: Variant;
+  Shortcut: Variant;
 begin
   if CurUninstallStep = usPostUninstall then
   begin
+    ShortcutPath := ExpandConstant('{userstartup}\Laytivo.lnk');
+    if FileExists(ShortcutPath) then
+    begin
+      try
+        Shell := CreateOleObject('WScript.Shell');
+        Shortcut := Shell.CreateShortcut(ShortcutPath);
+        if (CompareText(Shortcut.TargetPath, ExpandConstant('{app}\Laytivo.exe')) = 0) and
+           (Shortcut.Arguments = '--startup') then
+        begin
+          if DeleteFile(ShortcutPath) then
+          begin
+            RegDeleteValue(HKCU64, 'Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\StartupFolder', 'Laytivo.lnk');
+            Log('Own startup shortcut removed.');
+          end;
+        end;
+      except
+        Log('Startup shortcut could not be inspected; preserving it.');
+      end;
+    end;
     OwnCommand := '"' + ExpandConstant('{app}\Laytivo.exe') + '" --startup';
     if RegQueryStringValue(HKCU64, 'Software\Microsoft\Windows\CurrentVersion\Run', 'Laytivo', CurrentCommand) then
     begin

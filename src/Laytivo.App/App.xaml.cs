@@ -62,7 +62,13 @@ public partial class App : Application
             }
             _installerMutex = new Mutex(false, @"Local\Laytivo-Running");
             _hotkey = new GlobalHotkeyService();
-            _viewModel = new(new ConfigurationStore(directory), new AutostartService(), new WindowsWindowSystem(), _log, _hotkey);
+            var autostart = new AutostartService();
+            try
+            {
+                if (autostart.MigrateLegacyEntry()) _log.Write("autostart-migrated-to-shortcut", new { });
+            }
+            catch (Exception ex) { _log.Write("autostart-migration-failed", new { error = ex.ToString() }); }
+            _viewModel = new(new ConfigurationStore(directory), autostart, new WindowsWindowSystem(), _log, _hotkey);
             _hotkey.Pressed += async (_, _) =>
             {
                 _log.Write("hotkey-restore-requested", new { shortcut = RestoreHotkey.Describe(_viewModel.EffectiveSettings) });

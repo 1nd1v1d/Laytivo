@@ -1,5 +1,13 @@
 # Laytivo – Abnahme und Prüfprotokoll
 
+## Autostart-Korrektur 0.2.2 (06.11.2026)
+
+Direkt nach dem echten Neustart waren weder ein Laytivo-Prozess noch heutige Startprotokolle vorhanden. Der Run-Wert fehlte sowohl unter HKCU als auch unter dem Benutzer-SID-Hive und in beiden Registry-Ansichten. EXE 0.2.1 und die gespeicherte Einstellung `startWithWindows=true` waren erhalten. Damit ist der fehlende Startauftrag belegt; wodurch er gelöscht wurde, bleibt unbekannt.
+
+0.2.2 speichert den Startauftrag als Verknüpfung im persönlichen Autostartordner. Die native Windows-Verknüpfung enthält Ziel, Argumente und Arbeitsverzeichnis. Tests lesen sie mit einer neuen Serviceinstanz zurück, prüfen Migration und Entfernung des alten Eintrags, beachten Windows-Deaktivierungen und erhalten Startaufträge anderer Kopien. Der Installer-Test sichert und restauriert auch vorhandene Autostart-Verknüpfungen und deren Windows-Deaktivierungsstatus.
+
+80 automatische Tests bestanden (54 Core, 19 Infrastructure, 7 App), Build ohne Warnungen und Paket-Audit ohne bekannte anfällige Pakete. Der nächste echte Login mit dieser Korrektur bleibt manuell zu prüfen. Die Geometrieimplementierung ist unverändert gegenüber dem Desktop-Prüfstand 0.2.1.
+
 Stand: 05.11.2026. Automatisierte Tests prüfen Verhalten mit deterministischen Fakes und echten Dateien. Desktop-Smoke prüft echte Win32-Fenster, jedoch ausschließlich die eigenen Testprozesse. Ein Windows-Login wurde nicht simuliert und nicht ausgelöst.
 
 ## Korrekturen 0.2.1

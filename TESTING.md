@@ -8,6 +8,8 @@ Direkt nach dem echten Neustart waren weder ein Laytivo-Prozess noch heutige Sta
 
 80 automatische Tests bestanden (54 Core, 19 Infrastructure, 7 App), Build ohne Warnungen und Paket-Audit ohne bekannte anfällige Pakete. Der nächste echte Login mit dieser Korrektur bleibt manuell zu prüfen. Die Geometrieimplementierung ist unverändert gegenüber dem Desktop-Prüfstand 0.2.1.
 
+Der Installer 0.2.2 besteht alle **32 Prüfungen**, einschließlich Migration in die Autostart-Verknüpfung, Entfernung des alten Run-Werts, Hintergrundstart und Instanzweiterleitung. Beim Deinstallieren wird die eigene Verknüpfung entfernt; eine fremde Verknüpfung bleibt anhand ihres Dateihashes unverändert. Das echte Profil und zuvor vorhandene Startaufträge werden nach dem isolierten Test erhalten.
+
 Stand: 05.11.2026. Automatisierte Tests prüfen Verhalten mit deterministischen Fakes und echten Dateien. Desktop-Smoke prüft echte Win32-Fenster, jedoch ausschließlich die eigenen Testprozesse. Ein Windows-Login wurde nicht simuliert und nicht ausgelöst.
 
 ## Korrekturen 0.2.1
